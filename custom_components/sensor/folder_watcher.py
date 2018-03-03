@@ -40,8 +40,12 @@ def get_files(path):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the folder watcher."""
-    folder_watcher = Watcher(config.get(CONF_FOLDER_PATH), hass)
-    add_devices([folder_watcher], True)
+    folder_path = config.get(CONF_FOLDER_PATH)
+    if not hass.config.is_allowed_path(folder_path):
+        _LOGGER.error("folder %s is not valid or allowed", folder_path)
+    else:
+        folder_watcher = Watcher(folder_path, hass)
+        add_devices([folder_watcher], True)
 
 
 class Watcher(Entity):
@@ -70,21 +74,23 @@ class Watcher(Entity):
                     fname = entry.name
                     current_files.append(fname)  # Keep record of current files
 
-                    if fname not in self._files:  # Add the entry
+                    # If file not in files list, add the entry
+                    if fname not in self._files:
                         self._hass.bus.fire('file_added', {'file': fname})
-                        self._files[fname] = mtime
                         self._state = fname + " added"
-                    # If exists and modified
+                        self._files[fname] = mtime
+
+                    # If exists and modified, update timestamp
                     elif fname in self._files and self._files[fname] != mtime:
                         self._hass.bus.fire('file_modified', {'file': fname})
-                        self._files[fname] = mtime  # Update timestamp
                         self._state = fname + " modified"
+                        self._files[fname] = mtime
 
             # Check if any files deleted
             for fname in list(set(previous_files) - set(current_files)):
                 self._hass.bus.fire('file_deleted', {'file': fname})
-                self._files.pop(fname, None)  # Delete the entry
                 self._state = fname + " deleted"
+                self._files.pop(fname, None)  # Delete the entry
 
     @property
     def name(self):

@@ -6,5 +6,6 @@ Add to your configuration.yaml:
 ```yaml
 sensor:
   - platform: folder_watcher
-    folder: /Users/robincole/.homeassistant/images
+    folder: /images
 ```
+Note that you may need to add the folder to your `whitelist_external_dirs`
