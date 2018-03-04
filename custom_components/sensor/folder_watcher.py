@@ -6,9 +6,7 @@ Sensor for monitoring activity on a folder.
 import logging
 import os
 import voluptuous as vol
-#import sys
 import time
-import json
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
@@ -42,9 +40,10 @@ class Watcher(Entity):
 
     def __init__(self, path):
         self._path = os.path.join(path, '')  # Ass trailing /
-        self._state = None
+        event = WatchdogEvent()  # Init the data object
+        self._event = event
         self._observer = Observer()
-        self._observer.schedule(MyHandler(), self._path, recursive=True)
+        self._observer.schedule(MyHandler(event), self._path, recursive=True)
         self._observer.start()
 
     @property
@@ -55,7 +54,9 @@ class Watcher(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._state
+        data = self._event.data
+        event_str = data["event"] + " : " + data["file"]
+        return event_str
 
     @property
     def icon(self):
@@ -71,8 +72,33 @@ class Watcher(Entity):
         return attr
 
 
+class WatchdogEvent():
+    """Class representing the last event."""
+    def __init__(self):
+        data = {
+            "time": "no_data",
+            "event": "no_data",
+            "full_path": "no_data",
+            "file": "no_data"
+            }
+        self._data = data
+
+    def update(self, data):
+        """Update with recent data."""
+        self._data = data
+
+    @property
+    def data(self):
+        """Return the last event."""
+        return self._data
+
+
 class MyHandler(PatternMatchingEventHandler):
     patterns = ["*.txt", "*.py", "*.md", "*.jpg", "*.png"]
+
+    def __init__(self, event_data):
+        super().__init__()
+        self._event_data = event_data
 
     def process(self, event):
         """
@@ -91,8 +117,15 @@ class MyHandler(PatternMatchingEventHandler):
             "file": os.path.split(event.src_path)[-1]
         }
         # print(json.dumps(data))
-        _LOGGER.warning("WATCHDOG_CALLED")
-        _LOGGER.warning(json.dumps(data))
+        _LOGGER.warning("WATCHDOG_CALLED with {} {}".format(
+            data["event"], data["file"]))
+        self._event_data.update(data)
+
+    def on_modified(self, event):
+        self.process(event)
 
     def on_created(self, event):
+        self.process(event)
+
+    def on_deleted(self, event):
         self.process(event)
