@@ -5,6 +5,7 @@ import os
 import logging
 import voluptuous as vol
 from homeassistant.helpers.entity import Entity
+from homeassistant.const import EVENT_HOMEASSISTANT_START
 import homeassistant.helpers.config_validation as cv
 
 REQUIREMENTS = ['watchdog==0.8.3']
@@ -33,26 +34,17 @@ def setup(hass, config):
     conf = config[DOMAIN]
     paths = conf[CONF_FOLDERS]
     patterns = conf[CONF_FILTERS]
-    for path in paths:
-        if not hass.config.is_allowed_path(path):
-            _LOGGER.error("folder %s is not valid or allowed", path)
-            return False
-        else:
-            Watcher(path, patterns, hass)
+
+    def run_setup(event):
+        for path in paths:
+            if not hass.config.is_allowed_path(path):
+                _LOGGER.error("folder %s is not valid or allowed", path)
+                return False
+            else:
+                Watcher(path, patterns, hass)
+
+    hass.bus.listen_once(EVENT_HOMEASSISTANT_START, run_setup)
     return True
-
-
-def on_any_event(hass, event):
-    """On Watcher event, fire HA event."""
-    if not event.is_directory:
-        file_name = os.path.split(event.src_path)[1]
-        folder_name = os.path.split(event.src_path)[0]
-        hass.bus.fire(
-            DOMAIN, {
-                EVENT_TYPE: event.event_type,
-                FILE: file_name,
-                FOLDER: folder_name
-                })
 
 
 def create_event_handler(patterns, hass):
@@ -66,8 +58,16 @@ def create_event_handler(patterns, hass):
             self.hass = hass
 
         def process(self, event):
-            """Process the Watchdog event."""
-            on_any_event(self.hass, event)
+            """On Watcher event, fire HA event."""
+            if not event.is_directory:
+                file_name = os.path.split(event.src_path)[1]
+                folder_name = os.path.split(event.src_path)[0]
+                self.hass.bus.fire(
+                    DOMAIN, {
+                        EVENT_TYPE: event.event_type,
+                        FILE: file_name,
+                        FOLDER: folder_name
+                        })
 
         def on_modified(self, event):
             self.process(event)
@@ -94,6 +94,3 @@ class Watcher(Entity):
             path,
             recursive=True)
         self._observer.start()
-
-    def stop_watching(self):
-        self._observer.stop()
