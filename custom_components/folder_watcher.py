@@ -1,5 +1,8 @@
 """
 Component for monitoring activity on a folder.
+
+For more details about this platform, refer to the documentation at
+https://home-assistant.io/components/folder_watcher/
 """
 import os
 import logging
@@ -47,8 +50,7 @@ def setup(hass, config):
             if not hass.config.is_allowed_path(path):
                 _LOGGER.error("folder %s is not valid or allowed", path)
                 continue
-            else:
-                Watcher(path, patterns, hass)
+            Watcher(path, patterns, hass)
 
     hass.bus.listen_once(EVENT_HOMEASSISTANT_START, run_setup)
     return True
@@ -98,6 +100,7 @@ def create_event_handler(patterns, hass):
 
 class Watcher(Entity):
     """Class for starting Watchdog."""
+
     def __init__(self, path, patterns, hass):
         """Initialise the Watchdog oberver."""
         from watchdog.observers import Observer

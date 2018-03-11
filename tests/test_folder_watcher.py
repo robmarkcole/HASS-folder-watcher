@@ -22,7 +22,7 @@ def create_file(path):
 
 
 class TestFolderWatcher(unittest.TestCase):
-    """Test the filesize sensor."""
+    """Test the file_watcher component."""
 
     def setup_method(self, method):
         """Set up things to be run when tests are started."""
@@ -46,4 +46,14 @@ class TestFolderWatcher(unittest.TestCase):
                 }
         }
         self.assertTrue(
+            setup_component(self.hass, DOMAIN, config))
+
+    def test_invalid_path(self):
+        """Test that a valid path is setup."""
+        config = {
+            DOMAIN: {
+                CONF_WATCHERS: [{CONF_FOLDER: 'invalid_path'}]
+                }
+        }
+        self.assertFalse(
             setup_component(self.hass, DOMAIN, config))
