@@ -38,18 +38,14 @@ CONFIG_SCHEMA = vol.Schema({
 def setup(hass, config):
     """Set up the folder watcher."""
     conf = config[DOMAIN]
+    for watcher in conf:
+        path = watcher[CONF_FOLDER]
+        patterns = watcher[CONF_PATTERNS]
+        if not hass.config.is_allowed_path(path):
+            _LOGGER.error("folder %s is not valid or allowed", path)
+            continue
+        Watcher(path, patterns, hass)
 
-    def run_setup(event):
-        """"Wait for HA start then setup."""
-        for watcher in conf:
-            path = watcher[CONF_FOLDER]
-            patterns = watcher[CONF_PATTERNS]
-            if not hass.config.is_allowed_path(path):
-                _LOGGER.error("folder %s is not valid or allowed", path)
-                continue
-            Watcher(path, patterns, hass)
-
-    hass.bus.listen_once(EVENT_HOMEASSISTANT_START, run_setup)
     return True
 
 
@@ -101,13 +97,20 @@ class Watcher(Entity):
     def __init__(self, path, patterns, hass):
         """Initialise the Watchdog oberver."""
         from watchdog.observers import Observer
+        self._path = path
+        self._patterns = patterns
+        self.hass = hass
         self._observer = Observer()
+        hass.bus.listen_once(EVENT_HOMEASSISTANT_START, self.startup)
+        hass.bus.listen_once(EVENT_HOMEASSISTANT_STOP, self.shutdown)
+
+    def startup(self, event):
+        """Start the watcher."""
         self._observer.schedule(
-            create_event_handler(patterns, hass),
-            path,
+            create_event_handler(self._patterns, self.hass),
+            self._path,
             recursive=True)
         self._observer.start()
-        hass.bus.listen_once(EVENT_HOMEASSISTANT_STOP, self.shutdown)
 
     def shutdown(self, event):
         """Shutdown the watcher."""
