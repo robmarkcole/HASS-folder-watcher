@@ -3,7 +3,7 @@ import unittest
 import os
 
 from homeassistant.components.folder_watcher import (
-    DOMAIN, CONF_FOLDER, CONF_WATCHERS)
+    DOMAIN, CONF_FOLDER)
 from homeassistant.setup import setup_component
 from tests.common import get_test_home_assistant
 
@@ -41,19 +41,13 @@ class TestFolderWatcher(unittest.TestCase):
     def test_path(self):
         """Test that a valid path is setup."""
         config = {
-            DOMAIN: {
-                CONF_WATCHERS: [{CONF_FOLDER: TEST_DIR}]
-                }
-        }
+            DOMAIN: [{CONF_FOLDER: TEST_DIR}]}
         self.assertTrue(
             setup_component(self.hass, DOMAIN, config))
 
     def test_invalid_path(self):
         """Test that a valid path is setup."""
         config = {
-            DOMAIN: {
-                CONF_WATCHERS: [{CONF_FOLDER: 'invalid_path'}]
-                }
-        }
+            DOMAIN: [{CONF_FOLDER: 'invalid_path'}]}
         self.assertFalse(
             setup_component(self.hass, DOMAIN, config))
