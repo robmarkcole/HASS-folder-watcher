@@ -22,9 +22,9 @@ FILE = 'file'
 FOLDER = 'folder'
 
 WATCHER_CONFIG_SCHEMA = vol.Schema([{
-        vol.Required(CONF_FOLDER): cv.isdir,
-        vol.Optional(CONF_PATTERNS, default=[DEFAULT_PATTERN]): vol.All(
-            cv.ensure_list, [cv.string]),
+    vol.Required(CONF_FOLDER): cv.isdir,
+    vol.Optional(CONF_PATTERNS, default=[DEFAULT_PATTERN]): vol.All(
+        cv.ensure_list, [cv.string]),
 }])
 
 CONFIG_SCHEMA = vol.Schema({
@@ -46,7 +46,7 @@ def setup(hass, config):
             patterns = watcher[CONF_PATTERNS]
             if not hass.config.is_allowed_path(path):
                 _LOGGER.error("folder %s is not valid or allowed", path)
-                return False
+                continue
             else:
                 Watcher(path, patterns, hass)
 
