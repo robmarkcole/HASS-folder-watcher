@@ -1,6 +1,6 @@
 """The tests for the folder_watcher component."""
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 import os
 
 import pytest
@@ -12,9 +12,9 @@ from tests.common import get_test_home_assistant
 
 CWD = os.path.join(os.path.dirname(__file__))
 EVENT_TYPE = 'deleted'
-SRC_PATH = 'test/file.txt'
 FILE = 'file.txt'
 FOLDER = 'test'
+SRC_PATH = 'test/file.txt'
 
 
 def get_fake_event(src_path=SRC_PATH, event_type=EVENT_TYPE):
@@ -41,7 +41,6 @@ class TestFolderWatcher(unittest.TestCase):
         """Set up things to be run when tests are started."""
         self.hass = get_test_home_assistant()
         self.hass.config.whitelist_external_dirs = set((CWD))
-        self.events = []
 
         @callback
         def record_event(event):
@@ -75,14 +74,15 @@ class TestFolderWatcher(unittest.TestCase):
 
     def test_event(self):
         """Check that HASS events are fired correctly on watchdog event."""
+        fake_hass = Mock()
         event_handler = folder_watcher.create_event_handler(
-            [folder_watcher.DEFAULT_PATTERN], self.hass)
+            [folder_watcher.DEFAULT_PATTERN], fake_hass)
         fake_event = get_fake_event()
         event_handler.process(fake_event)
 
-        self.hass.block_till_done()
-        last_event = self.events[-1]
-        self.assertEqual(last_event.data["event_type"], EVENT_TYPE)
-        self.assertEqual(last_event.data['path'], SRC_PATH)
-        self.assertEqual(last_event.data['file'], FILE)
-        self.assertEqual(last_event.data['folder'], FOLDER)
+        expected_payload = {"event_type": fake_event.event_type,
+                            'path': fake_event.src_path,
+                            'file': FILE,
+                            'folder': FOLDER}
+        fake_hass.bus.fire.assert_called_with(
+            folder_watcher.DOMAIN, expected_payload)
