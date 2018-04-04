@@ -19,8 +19,7 @@ To configure the `folder_watcher` component add to you `configuration.yaml` file
 
 ```yaml
 folder_watcher:
-  watchers:
-    - folder: /config
+  - folder: /config
 ```
 
 {% configuration %}
@@ -40,11 +39,10 @@ Pattern matching using [fnmatch](https://docs.python.org/3.6/library/fnmatch.htm
 
 ```yaml
 folder_watcher:
-  watchers:
-    - folder: /config
-      patterns:
-        - '*.yaml'
-        - '*.txt'
+  - folder: /config
+    patterns:
+      - '*.yaml'
+      - '*.txt'
 ```
 
 ## Automations
